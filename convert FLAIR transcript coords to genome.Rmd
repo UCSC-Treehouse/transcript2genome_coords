@@ -30,7 +30,7 @@ gene_model_gtf_file <- "NHA_hTERT_DRNA_20220609_flair_collapse_output.isoforms.g
 ```{r}
 
 transcript_coord_input <- read_tsv(transcript_coord_input_file) %>%
-  rename(mod_position = position)
+  rename(transcript_position = position)
 
 ```
 
@@ -47,7 +47,7 @@ chr_in_order <- paste0("chr", c(1:22, "X", "M"))
 gtf <-  gtf_raw %>%
   filter(feature == "exon") %>%
   rename(open_end = end) %>%
-  mutate(end = open_end +1) %>% # I was assuming half-open, but it was  end-inclusive
+  mutate(end = open_end +1) %>% # compensate for coords being end-inclusive
   mutate(gene_id = str_remove(attributes, '";.*$') %>% str_remove('^.*"'),
          transcript_id = str_remove(attributes, '"; exon.*$') %>% str_remove('^.*transcript_id "'),
          exon_number = str_remove(attributes, '";$') %>% str_remove('^.*exon_number "') %>% as.numeric(),
@@ -93,13 +93,12 @@ conversion_results_raw <- left_join(transcript_coord_input,
           gtf_relevant_with_pos_list,
            by = "transcript_id") %>%
     rowwise() %>%
-  mutate(genome_position_of_modification = genome_pos[mod_position])
+  mutate(genome_position_of_modification = genome_pos[transcript_position])
 
 conversion_results <- conversion_results_raw %>%
-  select(gene_id, transcript_id, transcript_position = mod_position,
+  select(gene_id, transcript_id, transcript_position,
          chr = seqname, genome_position = genome_position_of_modification, strand) 
    
-conversion_results
 
 time_stamp_for_file_name <- format(Sys.time(), "%Y%m%d_%H%M%S")
 
